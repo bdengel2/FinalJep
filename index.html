@@ -472,7 +472,7 @@ function renderClue(clue) {
     const correct = scoreAnswer(resp, clue.question);
     const prefix  = getPrefix(clue.question, clue.category);
     const delta   = correct ? wagerAmt : -wagerAmt;
-    const result  = { correct, prefix, wager:wagerAmt, delta, userResponse:resp, correctAnswer:clue.question, category:clue.category, airDate:clue.air_date };
+    const result  = { correct, prefix, wager:wagerAmt, delta, userResponse:resp, correctAnswer:clue.question, clueText:clue.answer, category:clue.category, airDate:clue.air_date };
 
     if (mode === "daily") {
       const s        = loadDaily();
@@ -545,6 +545,13 @@ function renderResult(result, alreadyPlayed) {
       : "";
 
   document.getElementById("game-card").innerHTML = `
+    <div class="cat-box">
+      <div class="cat-eye">Category</div>
+      <div class="cat-name">${result.category}</div>
+    </div>
+
+    <div class="clue-box" style="margin-bottom:1.25rem">${result.clueText}</div>
+
     <div class="verdict ${result.correct ? "ok" : "err"}">
       <div class="verdict-icon">${result.correct ? "✓" : "✗"}</div>
       <div class="verdict-title">${result.correct ? "Correct!" : "Not quite"}</div>

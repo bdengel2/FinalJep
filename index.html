@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Final Jeopardy!</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css" />
+  <style>
+    /* ── Theme (auto light / dark) ──────────────────────────────────── */
+    :root {
+      --blue:     #060CE9;
+      --gold:     #B8860B;
+      --s0:       #F5F5F5;
+      --s1:       #FFFFFF;
+      --s2:       #EBEBEB;
+      --tp:       #111111;
+      --ts:       #555555;
+      --tm:       #999999;
+      --t-ok:     #166534;
+      --t-err:    #991B1B;
+      --bg-ok:    #F0FDF4;
+      --bg-err:   #FEF2F2;
+      --bd-ok:    #A7F3D0;
+      --bd-err:   #FECACA;
+      --bg-acc:   #EEF2FF;
+      --t-acc:    #1E40AF;
+      --bd-acc:   #C7D2FE;
+      --bd:       rgba(0,0,0,0.09);
+      --bd-str:   rgba(0,0,0,0.15);
+      --r:        8px;
+      --mono:     "SF Mono","Fira Mono","Consolas",monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --gold:   #FFD700;
+        --s0:     #181818;
+        --s1:     #242424;
+        --s2:     #2E2E2E;
+        --tp:     #ECECEC;
+        --ts:     #ABABAB;
+        --tm:     #686868;
+        --t-ok:   #4ADE80;
+        --t-err:  #F87171;
+        --bg-ok:  #052E16;
+        --bg-err: #450A0A;
+        --bd-ok:  #166534;
+        --bd-err: #7F1D1D;
+        --bg-acc: #1E1B4B;
+        --t-acc:  #93A8F8;
+        --bd-acc: #312E81;
+        --bd:     rgba(255,255,255,0.09);
+        --bd-str: rgba(255,255,255,0.16);
+        --blue:   #3B4FE8;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--s0);
+      color: var(--tp);
+      min-height: 100vh;
+      padding: 1.5rem 1rem 4rem;
+      line-height: 1.5;
+    }
+
+    .wrap { max-width: 560px; margin: 0 auto; }
+
+    /* ── Header ─────────────────────────────────────────────────────── */
+    .header    { text-align: center; margin-bottom: 1.25rem; }
+    .title     { font-family: Georgia, serif; font-size: 26px; font-weight: normal; letter-spacing: 1.5px; color: var(--blue); }
+    .date-lbl  { font-size: 13px; color: var(--tm); margin-top: 4px; }
+
+    /* ── Mode Toggle ─────────────────────────────────────────────────── */
+    .mode-toggle {
+      display: flex;
+      background: var(--s2);
+      border: 0.5px solid var(--bd);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 1rem;
+    }
+    .mode-btn {
+      flex: 1; padding: 9px 12px;
+      font-size: 14px; font-weight: 500;
+      border: none; background: transparent;
+      cursor: pointer; border-radius: 7px;
+      color: var(--ts); transition: all 0.18s;
+      font-family: inherit;
+    }
+    .mode-btn.active {
+      background: var(--s1); color: var(--blue);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+    }
+
+    /* ── Stats Bar ───────────────────────────────────────────────────── */
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .stat  {
+      background: var(--s1); border: 0.5px solid var(--bd);
+      border-radius: var(--r); padding: 10px 8px; text-align: center;
+    }
+    .stat-lbl { font-size: 10px; color: var(--tm); text-transform: uppercase; letter-spacing: 0.9px; margin-bottom: 4px; }
+    .stat-val { font-size: 20px; font-weight: 600; color: var(--tp); line-height: 1.2; }
+    .stat-val.neg { color: var(--t-err); }
+
+    /* ── Game Card ───────────────────────────────────────────────────── */
+    .card { background: var(--s1); border: 0.5px solid var(--bd); border-radius: 12px; padding: 1.5rem; }
+
+    /* ── Category Box ────────────────────────────────────────────────── */
+    .cat-box   { background: #060CE9; border-radius: var(--r); padding: 1.25rem 1rem; text-align: center; margin-bottom: 1.5rem; }
+    .cat-eye   { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1.8px; margin-bottom: 6px; }
+    .cat-name  { font-family: Georgia, serif; font-size: 22px; font-weight: normal; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; line-height: 1.3; }
+
+    /* ── Form ────────────────────────────────────────────────────────── */
+    .field-lbl  { display: block; font-size: 11px; color: var(--ts); text-transform: uppercase; letter-spacing: 0.9px; margin-bottom: 6px; }
+    .field-hint { font-size: 12px; color: var(--tm); margin-bottom: 8px; }
+    .field-sub  { font-size: 12px; color: var(--tm); margin-top: 6px; }
+    .field-err  { font-size: 13px; color: var(--t-err); margin-top: 8px; min-height: 18px; }
+
+    .dollar-wrap { position: relative; }
+    .dollar-pfx  {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--ts); font-weight: 500;
+      pointer-events: none; z-index: 1;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%; padding: 12px 14px;
+      background: var(--s0); border: 0.5px solid var(--bd-str);
+      border-radius: var(--r); color: var(--tp);
+      font-size: 15px; font-family: inherit;
+      outline: none; transition: border-color 0.18s;
+      -moz-appearance: textfield; appearance: textfield;
+    }
+    input[type="number"]                        { padding-left: 24px; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input:focus    { border-color: var(--blue); }
+    input:disabled { opacity: 0.5; cursor: default; }
+
+    /* ── Buttons ─────────────────────────────────────────────────────── */
+    .btn-primary {
+      display: block; width: 100%; margin-top: 1.25rem; padding: 13px;
+      background: #060CE9; color: var(--gold);
+      border: none; border-radius: var(--r);
+      font-size: 15px; font-weight: 600;
+      font-family: Georgia, serif; letter-spacing: 0.5px;
+      cursor: pointer; transition: opacity 0.18s;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: 0.86; }
+    .btn-primary:disabled { opacity: 0.4; cursor: default; }
+    .btn-primary.narrow { width: auto; padding: 12px 28px; margin: 1rem auto 0; }
+
+    /* ── Clue Box ────────────────────────────────────────────────────── */
+    .clue-box {
+      font-family: Georgia, serif; font-size: 19px; line-height: 1.65;
+      text-align: center; padding: 1.25rem;
+      background: var(--s0); border-radius: var(--r); margin-bottom: 1rem;
+      color: var(--tp);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .clue-box.hidden { opacity: 0; transform: translateY(8px); }
+    .air-date { font-size: 13px; color: var(--tm); text-align: right; margin-bottom: 1.25rem; }
+    .wager-badge {
+      display: inline-block; background: var(--bg-acc); color: var(--t-acc);
+      border: 0.5px solid var(--bd-acc); font-size: 13px;
+      padding: 4px 10px; border-radius: 6px; margin-top: 1rem;
+    }
+
+    /* ── Result ──────────────────────────────────────────────────────── */
+    .verdict { text-align: center; padding: 1.25rem; border-radius: var(--r); margin-bottom: 1.25rem; }
+    .verdict.ok  { background: var(--bg-ok);  border: 0.5px solid var(--bd-ok);  }
+    .verdict.err { background: var(--bg-err); border: 0.5px solid var(--bd-err); }
+    .verdict-icon  { font-size: 28px; font-weight: 700; margin-bottom: 6px; line-height: 1; }
+    .verdict-title { font-size: 18px; font-weight: 600; }
+    .ok  .verdict-icon, .ok  .verdict-title { color: var(--t-ok);  }
+    .err .verdict-icon, .err .verdict-title { color: var(--t-err); }
+
+    .ans-block { margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 0.5px solid var(--bd); }
+    .blk-lbl { font-size: 10px; color: var(--tm); text-transform: uppercase; letter-spacing: 0.9px; margin-bottom: 6px; }
+    .blk-val { font-family: Georgia, serif; font-size: 17px; line-height: 1.5; }
+    .blk-val.c-ans { color: var(--blue); font-weight: 600; }
+    .blk-val.u-ok  { color: var(--t-ok);  }
+    .blk-val.u-err { color: var(--t-err); }
+
+    .score-grid   { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 1.25rem; }
+    .score-grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 1.25rem; }
+
+    .wiki-link {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 14px; margin-bottom: 0.5rem;
+      background: var(--bg-acc); border: 0.5px solid var(--bd-acc);
+      border-radius: var(--r); color: var(--t-acc);
+      text-decoration: none; font-size: 14px;
+    }
+    .wiki-link:hover { opacity: 0.8; }
+    .wiki-ml { margin-left: auto; }
+
+    /* ── Played / Countdown ──────────────────────────────────────────── */
+    .played-note {
+      text-align: center; padding: 1.25rem;
+      background: var(--s0); border-radius: var(--r); margin-top: 1rem;
+    }
+    .countdown {
+      font-family: var(--mono); font-size: 30px; font-weight: 600;
+      color: var(--blue); margin: 6px 0 4px;
+    }
+
+    /* ── State messages ──────────────────────────────────────────────── */
+    .state-msg { text-align: center; padding: 3rem 1rem; }
+    .state-icon { font-size: 36px; margin-bottom: 12px; color: var(--blue); }
+    .state-icon.err { color: var(--t-err); }
+    .state-msg p { font-size: 14px; color: var(--tm); line-height: 1.7; }
+    code {
+      font-family: var(--mono); font-size: 12px;
+      background: var(--s2); padding: 1px 5px; border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="header">
+    <div class="title">Daily Final Jeopardy!</div>
+    <div id="date-lbl" class="date-lbl"></div>
+  </header>
+
+  <div class="mode-toggle" role="tablist" aria-label="Game mode">
+    <button class="mode-btn active" id="btn-daily"  role="tab" aria-selected="true"  onclick="switchMode('daily')">Daily</button>
+    <button class="mode-btn"        id="btn-unlim"  role="tab" aria-selected="false" onclick="switchMode('unlimited')">Unlimited</button>
+  </div>
+
+  <div class="stats" id="stats-bar" aria-live="polite"></div>
+
+  <main class="card" id="game-card">
+    <div class="state-msg">
+      <div class="state-icon"><i class="ti ti-cards" aria-hidden="true"></i></div>
+      <p>Loading clues…</p>
+    </div>
+  </main>
+
+</div>
+<script>
+// ── Storage keys — stable across file updates ──────────────────────────────────
+const SK_DAILY = "jdaily_v2";
+const SK_UNLIM = "junlim_v2";
+
+// ── Default stat shapes ────────────────────────────────────────────────────────
+const defDaily = () => ({ score:0, gamesPlayed:0, streak:0, history:[], lastPlayedDate:null, lastResult:null });
+const defUnlim = () => ({ currentStreak:0, bestStreak:0, streakHistory:[], totalGames:0, totalCorrect:0 });
+
+// ── LocalStorage helpers ───────────────────────────────────────────────────────
+function loadDaily() { try { return Object.assign(defDaily(), JSON.parse(localStorage.getItem(SK_DAILY)||"{}")); } catch { return defDaily(); } }
+function loadUnlim() { try { return Object.assign(defUnlim(), JSON.parse(localStorage.getItem(SK_UNLIM)||"{}")); } catch { return defUnlim(); } }
+function saveDaily(s) { try { localStorage.setItem(SK_DAILY, JSON.stringify(s)); } catch {} }
+function saveUnlim(s) { try { localStorage.setItem(SK_UNLIM, JSON.stringify(s)); } catch {} }
+
+// ── App state ──────────────────────────────────────────────────────────────────
+let clues         = [];
+let mode          = "daily";
+let currentClue   = null;
+let wagerAmt      = 0;
+let sessionPlayed = new Set();   // unlimited: indices used this session
+let cdTimer       = null;        // countdown interval handle
+
+// ── Date helpers ───────────────────────────────────────────────────────────────
+function getGameDateStr() {
+  // Returns the YYYY-MM-DD "game day" in CST.
+  // Advances to the next calendar day after 11:30 PM CST so all users
+  // unlock the same new clue at the same moment.
+  const p = {};
+  new Intl.DateTimeFormat("en-US", {
+    timeZone:"America/Chicago",
+    year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit", hour12:false
+  }).formatToParts(new Date()).forEach(x => p[x.type] = x.value);
+
+  let h = parseInt(p.hour) % 24, m = parseInt(p.minute);
+  let y = parseInt(p.year), mo = parseInt(p.month), d = parseInt(p.day);
+
+  if (h === 23 && m >= 30) {
+    const dt = new Date(y, mo - 1, d);
+    dt.setDate(dt.getDate() + 1);
+    y = dt.getFullYear(); mo = dt.getMonth() + 1; d = dt.getDate();
+  }
+  return `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+}
+
+function getCountdown() {
+  const p = {};
+  new Intl.DateTimeFormat("en-US", {
+    timeZone:"America/Chicago",
+    hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false
+  }).formatToParts(new Date()).forEach(x => p[x.type] = x.value);
+
+  const cur  = (parseInt(p.hour) % 24) * 3600 + parseInt(p.minute) * 60 + parseInt(p.second);
+  let   diff = (23 * 3600 + 30 * 60) - cur;
+  if (diff <= 0) diff += 86400;
+  return [Math.floor(diff/3600), Math.floor((diff%3600)/60), diff%60].map(n => String(n).padStart(2,"0")).join(":");
+}
+
+// ── Clue selection ─────────────────────────────────────────────────────────────
+function hashStr(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function getDailyClue() {
+  // Deterministic: every user gets the same clue on the same calendar day.
+  const dateStr = getGameDateStr();
+  return { clue: clues[hashStr(dateStr) % clues.length], dateStr };
+}
+
+function getRandomClue() {
+  // Avoids repeating a question within the same unlimited session.
+  if (sessionPlayed.size >= clues.length) sessionPlayed.clear();
+  let idx, safety = 0;
+  do { idx = Math.floor(Math.random() * clues.length); safety++; }
+  while (sessionPlayed.has(idx) && safety < 300);
+  sessionPlayed.add(idx);
+  return clues[idx];
+}
+
+// ── Client-side fuzzy scoring ──────────────────────────────────────────────────
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  let prev = [...Array(n + 1).keys()];
+  for (let i = 1; i <= m; i++) {
+    const curr = [i];
+    for (let j = 1; j <= n; j++)
+      curr[j] = a[i-1] === b[j-1] ? prev[j-1] : 1 + Math.min(prev[j-1], prev[j], curr[j-1]);
+    prev = curr;
+  }
+  return prev[n];
+}
+
+function normalize(s) {
+  return s.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\b(a|an|the)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function scoreAnswer(userAns, correctAns) {
+  const u = normalize(userAns);
+  const c = normalize(correctAns);
+  if (!u) return false;
+  if (u === c) return true;
+
+  // Word overlap — at least 75% of significant words must match
+  const uW = u.split(" ").filter(w => w.length > 2);
+  const cW = new Set(c.split(" ").filter(w => w.length > 2));
+  if (uW.length > 0 && cW.size > 0) {
+    const hits = uW.filter(w => cW.has(w)).length;
+    if (hits / Math.max(uW.length, cW.size) >= 0.75) return true;
+  }
+
+  // Levenshtein similarity — allows roughly 22% character deviation
+  const dist = levenshtein(u, c);
+  const maxL = Math.max(u.length, c.length);
+  return maxL > 0 && (1 - dist / maxL) >= 0.78;
+}
+
+function getPrefix(answer, category) {
+  const cat = category.toUpperCase();
+  const ans = answer.toLowerCase();
+
+  const personCats = /PRESIDENT|PRIME MINISTER|KING|QUEEN|PRINCE|AUTHOR|WRITER|POET|ACTOR|ACTRESS|SINGER|MUSICIAN|COMPOSER|ATHLETE|SCIENTIST|INVENTOR|ARTIST|PAINTER|PHILOSOPHER|EXPLORER|ASTRONAUT|POPE|EMPEROR|EMPRESS|PHARAOH|GENERAL|ADMIRAL|POLITICIAN|LEADER|CEO|FOUNDER|BIOGRAPHY|PEOPLE|PERSON|MEN |WOMEN |BORN IN|DIED IN/;
+  const personAns  = /^(he |she |his |her |born |this man |this woman )/;
+  const placeCats  = /CAPITAL|CITY|CITIES|COUNTRY|COUNTRIES|CONTINENT|RIVER|MOUNTAIN|OCEAN|SEA|LAKE|ISLAND|ISLANDS|STATE |STATES|PROVINCE|GEOGRAPHY|WORLD MAP|LOCATED IN/;
+  const placeAns   = /^(this city|this country|this nation|this state|located in|situated in)/;
+
+  if (personCats.test(cat) || personAns.test(ans)) return "Who is";
+  if (placeCats.test(cat)  || placeAns.test(ans))  return "Where is";
+  return "What is";
+}
+
+function wikiURL(answer) {
+  return "https://en.wikipedia.org/wiki/Special:Search?search=" + encodeURIComponent(answer) + "&go=Go";
+}
+
+// ── Wager max logic ────────────────────────────────────────────────────────────
+function getWagerMax() {
+  if (mode === "unlimited") return 2000;
+  const s = loadDaily();
+  if (s.gamesPlayed === 0 || s.score <= 0) return 2000;
+  return s.score > 2000 ? s.score : 2000;
+}
+
+// ── Formatting ─────────────────────────────────────────────────────────────────
+const fmtMoney  = n => "$" + Math.abs(Math.round(n)).toLocaleString();
+const signedAmt = n => (n < 0 ? "−" : "+") + fmtMoney(n);
+const fmtDate   = d => { if (!d) return ""; const [y,m,day] = d.split("-"); return `${m}/${day}/${y}`; };
+
+// ── Stats bar ──────────────────────────────────────────────────────────────────
+function renderStats() {
+  const el = document.getElementById("stats-bar");
+  if (mode === "daily") {
+    const s = loadDaily();
+    el.innerHTML = `
+      <div class="stat"><div class="stat-lbl">Score</div><div class="stat-val${s.score<0?" neg":""}">${s.score<0?"-":""}${fmtMoney(s.score)}</div></div>
+      <div class="stat"><div class="stat-lbl">Games</div><div class="stat-val">${s.gamesPlayed}</div></div>
+      <div class="stat"><div class="stat-lbl">Streak</div><div class="stat-val">${s.streak}</div></div>
+    `;
+  } else {
+    const s   = loadUnlim();
+    const best = Math.max(s.bestStreak, s.currentStreak);
+    const allS = [...(s.streakHistory || []), s.currentStreak].filter(x => x > 0);
+    const avg  = allS.length ? (allS.reduce((a, b) => a + b, 0) / allS.length).toFixed(1) : "—";
+    el.innerHTML = `
+      <div class="stat"><div class="stat-lbl">Current Streak</div><div class="stat-val">${s.currentStreak}</div></div>
+      <div class="stat"><div class="stat-lbl">Best Streak</div><div class="stat-val">${best}</div></div>
+      <div class="stat"><div class="stat-lbl">Avg Streak</div><div class="stat-val">${avg}</div></div>
+    `;
+  }
+}
+
+// ── Phase: wager ───────────────────────────────────────────────────────────────
+function renderWager(clue) {
+  currentClue = clue;
+  const wMax = getWagerMax();
+
+  document.getElementById("game-card").innerHTML = `
+    <div class="cat-box">
+      <div class="cat-eye">${mode === "daily" ? "Today's category" : "Category"}</div>
+      <div class="cat-name">${clue.category}</div>
+    </div>
+    <label class="field-lbl" for="wager-inp">Your wager</label>
+    <div class="dollar-wrap">
+      <span class="dollar-pfx" aria-hidden="true">$</span>
+      <input type="number" id="wager-inp" min="5" max="${wMax}" placeholder="5 – ${wMax.toLocaleString()}" autocomplete="off" />
+    </div>
+    <div class="field-sub">Min $5 &nbsp;·&nbsp; Max ${fmtMoney(wMax)}</div>
+    <div class="field-err" id="wager-err"></div>
+    <button class="btn-primary" id="wager-btn">Place wager →</button>
+  `;
+
+  document.getElementById("wager-inp").focus();
+
+  const go = () => {
+    const w = parseInt(document.getElementById("wager-inp").value, 10);
+    if (isNaN(w) || w < 5 || w > wMax) {
+      document.getElementById("wager-err").textContent = `Enter a wager between $5 and ${fmtMoney(wMax)}`;
+      return;
+    }
+    wagerAmt = w;
+    renderClue(currentClue);
+  };
+
+  document.getElementById("wager-btn").onclick = go;
+  document.getElementById("wager-inp").onkeydown = e => { if (e.key === "Enter") go(); };
+}
+
+// ── Phase: clue ────────────────────────────────────────────────────────────────
+function renderClue(clue) {
+  document.getElementById("game-card").innerHTML = `
+    <div class="cat-box">
+      <div class="cat-eye">Category</div>
+      <div class="cat-name">${clue.category}</div>
+    </div>
+    <div class="clue-box hidden" id="clue-txt">${clue.answer}</div>
+    <div class="air-date">Original air date: ${fmtDate(clue.air_date)}</div>
+    <label class="field-lbl" for="resp-inp">Your response</label>
+    <div class="field-hint">"Who / What / Where is" will be added automatically</div>
+    <input type="text" id="resp-inp" placeholder="Type your answer here…" autocomplete="off" />
+    <div class="field-err" id="resp-err"></div>
+    <button class="btn-primary" id="resp-btn">Submit answer →</button>
+    <div style="text-align:center"><span class="wager-badge">Wager: ${fmtMoney(wagerAmt)}</span></div>
+  `;
+
+  // Reveal animation
+  setTimeout(() => {
+    const el = document.getElementById("clue-txt");
+    if (el) el.classList.remove("hidden");
+  }, 60);
+
+  document.getElementById("resp-inp").focus();
+
+  const submit = () => {
+    const resp = (document.getElementById("resp-inp").value || "").trim();
+    if (!resp) { document.getElementById("resp-err").textContent = "Please enter a response."; return; }
+
+    document.getElementById("resp-btn").disabled = true;
+    document.getElementById("resp-inp").disabled = true;
+
+    const correct = scoreAnswer(resp, clue.question);
+    const prefix  = getPrefix(clue.question, clue.category);
+    const delta   = correct ? wagerAmt : -wagerAmt;
+    const result  = { correct, prefix, wager:wagerAmt, delta, userResponse:resp, correctAnswer:clue.question, category:clue.category, airDate:clue.air_date };
+
+    if (mode === "daily") {
+      const s        = loadDaily();
+      const newScore = s.score + delta;
+      const dateStr  = getGameDateStr();
+      result.newScore = newScore;
+      saveDaily({
+        ...s,
+        score:          newScore,
+        gamesPlayed:    s.gamesPlayed + 1,
+        streak:         correct ? s.streak + 1 : 0,
+        lastPlayedDate: dateStr,
+        lastResult:     result,
+        history:        [...(s.history || []), { date:dateStr, wager:wagerAmt, correct, delta, scoreAfter:newScore }].slice(-60)
+      });
+    } else {
+      const s          = loadUnlim();
+      const newStreak  = correct ? s.currentStreak + 1 : 0;
+      // Save finished streak to history when a wrong answer ends it
+      const newHistory = (!correct && s.currentStreak > 0)
+        ? [...(s.streakHistory || []), s.currentStreak].slice(-100)
+        : (s.streakHistory || []);
+      const newBest    = Math.max(s.bestStreak, newStreak, correct ? 0 : s.currentStreak);
+      saveUnlim({
+        currentStreak: newStreak,
+        bestStreak:    newBest,
+        streakHistory: newHistory,
+        totalGames:    s.totalGames + 1,
+        totalCorrect:  s.totalCorrect + (correct ? 1 : 0)
+      });
+    }
+
+    renderStats();
+    renderResult(result, false);
+  };
+
+  document.getElementById("resp-btn").onclick = submit;
+  document.getElementById("resp-inp").onkeydown = e => { if (e.key === "Enter") submit(); };
+}
+
+// ── Phase: result ──────────────────────────────────────────────────────────────
+function renderResult(result, alreadyPlayed) {
+  if (cdTimer) { clearInterval(cdTimer); cdTimer = null; }
+
+  // Score breakdown differs by mode
+  const scoreHTML = mode === "daily"
+    ? `<div class="score-grid">
+        <div class="stat"><div class="stat-lbl">Wager</div><div class="stat-val" style="font-size:17px">${fmtMoney(result.wager)}</div></div>
+        <div class="stat"><div class="stat-lbl">${result.correct?"Won":"Lost"}</div><div class="stat-val" style="font-size:17px;color:${result.correct?"var(--t-ok)":"var(--t-err)"}">${signedAmt(result.delta)}</div></div>
+        <div class="stat"><div class="stat-lbl">New Score</div><div class="stat-val" style="font-size:17px;color:${result.newScore<0?"var(--t-err)":"var(--tp)"}">${result.newScore<0?"-":""}${fmtMoney(result.newScore)}</div></div>
+      </div>`
+    : `<div class="score-grid-2">
+        <div class="stat"><div class="stat-lbl">Wager</div><div class="stat-val" style="font-size:17px">${fmtMoney(result.wager)}</div></div>
+        <div class="stat"><div class="stat-lbl">${result.correct?"Won":"Lost"}</div><div class="stat-val" style="font-size:17px;color:${result.correct?"var(--t-ok)":"var(--t-err)"}">${signedAmt(result.delta)}</div></div>
+      </div>`;
+
+  // Bottom action: Next button (unlimited) or countdown (daily already-played)
+  const footerHTML = mode === "unlimited"
+    ? `<button class="btn-primary narrow" id="next-btn">Next question →</button>`
+    : alreadyPlayed
+      ? `<div class="played-note">
+          <div style="font-size:13px;color:var(--tm)">Next clue in</div>
+          <div class="countdown" id="countdown">${getCountdown()}</div>
+          <div style="font-size:12px;color:var(--tm);margin-top:2px">Resets at 11:30 PM CST</div>
+        </div>`
+      : "";
+
+  document.getElementById("game-card").innerHTML = `
+    <div class="verdict ${result.correct ? "ok" : "err"}">
+      <div class="verdict-icon">${result.correct ? "✓" : "✗"}</div>
+      <div class="verdict-title">${result.correct ? "Correct!" : "Not quite"}</div>
+    </div>
+
+    <div class="ans-block">
+      <div class="blk-lbl">Correct answer</div>
+      <div class="blk-val c-ans">${result.prefix} ${result.correctAnswer}?</div>
+    </div>
+
+    <div class="ans-block">
+      <div class="blk-lbl">Your response</div>
+      <div class="blk-val ${result.correct ? "u-ok" : "u-err"}">${result.prefix} ${result.userResponse}?</div>
+    </div>
+
+    ${scoreHTML}
+
+    <a class="wiki-link" href="${wikiURL(result.correctAnswer)}" target="_blank" rel="noopener noreferrer">
+      <i class="ti ti-book-2" aria-hidden="true"></i>
+      <span>Learn more: <strong>${result.correctAnswer}</strong></span>
+      <i class="ti ti-external-link wiki-ml" aria-hidden="true"></i>
+    </a>
+
+    ${footerHTML}
+  `;
+
+  if (mode === "unlimited") {
+    document.getElementById("next-btn").onclick = () => renderWager(getRandomClue());
+  }
+
+  // Start live countdown if already played today
+  if (alreadyPlayed) {
+    cdTimer = setInterval(() => {
+      const el = document.getElementById("countdown");
+      if (el) el.textContent = getCountdown();
+      else { clearInterval(cdTimer); cdTimer = null; }
+    }, 1000);
+  }
+}
+
+// ── Mode switch ────────────────────────────────────────────────────────────────
+function switchMode(newMode) {
+  mode = newMode;
+  document.getElementById("btn-daily").classList.toggle("active", mode === "daily");
+  document.getElementById("btn-daily").setAttribute("aria-selected", mode === "daily");
+  document.getElementById("btn-unlim").classList.toggle("active", mode === "unlimited");
+  document.getElementById("btn-unlim").setAttribute("aria-selected", mode === "unlimited");
+  renderStats();
+  if (!clues.length) return;   // still loading
+
+  if (mode === "daily") {
+    const s = loadDaily();
+    const { clue, dateStr } = getDailyClue();
+    if (s.lastPlayedDate === dateStr) {
+      renderResult(s.lastResult, true);     // show today's result + countdown
+    } else {
+      renderWager(clue);
+    }
+  } else {
+    sessionPlayed.clear();
+    renderWager(getRandomClue());
+  }
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────────
+document.getElementById("date-lbl").textContent = new Date().toLocaleDateString("en-US", {
+  weekday:"long", month:"long", day:"numeric", year:"numeric"
+});
+renderStats();
+
+fetch("./final_jeopardy_slim.tsv")
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(txt => {
+    const [header, ...rows] = txt.trim().split("\n");
+    const keys = header.split("\t");
+    clues = rows
+      .map(row => {
+        const vals = row.split("\t");
+        return Object.fromEntries(keys.map((k, i) => [k.trim(), (vals[i] || "").trim()]));
+      })
+      .filter(c => c.answer && c.question && c.category);
+
+    if (!clues.length) throw new Error("empty dataset");
+    switchMode("daily");   // start in daily mode
+  })
+  .catch(() => {
+    document.getElementById("game-card").innerHTML = `
+      <div class="state-msg">
+        <div class="state-icon err"><i class="ti ti-alert-circle" aria-hidden="true"></i></div>
+        <p>
+          Could not load <code>final_jeopardy_slim.tsv</code>.<br><br>
+          Make sure the file is in the same folder as <code>index.html</code>
+          and that you're serving the site over HTTP
+          (GitHub Pages handles this automatically).
+        </p>
+      </div>
+    `;
+  });
+</script>
+</body>
+</html>

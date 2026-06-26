@@ -30,29 +30,7 @@
       --r:        8px;
       --mono:     "SF Mono","Fira Mono","Consolas",monospace;
     }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --gold:   #FFD700;
-        --s0:     #181818;
-        --s1:     #242424;
-        --s2:     #2E2E2E;
-        --tp:     #ECECEC;
-        --ts:     #ABABAB;
-        --tm:     #686868;
-        --t-ok:   #4ADE80;
-        --t-err:  #F87171;
-        --bg-ok:  #052E16;
-        --bg-err: #450A0A;
-        --bd-ok:  #166534;
-        --bd-err: #7F1D1D;
-        --bg-acc: #1E1B4B;
-        --t-acc:  #93A8F8;
-        --bd-acc: #312E81;
-        --bd:     rgba(255,255,255,0.09);
-        --bd-str: rgba(255,255,255,0.16);
-        --blue:   #3B4FE8;
-      }
-    }
+
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -95,7 +73,8 @@
     }
 
     /* ── Stats Bar ───────────────────────────────────────────────────── */
-    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .stats   { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .stat-wide { grid-column: 1 / -1; }
     .stat  {
       background: var(--s1); border: 0.5px solid var(--bd);
       border-radius: var(--r); padding: 10px 8px; text-align: center;
@@ -249,7 +228,7 @@ const SK_UNLIM = "junlim_v2";
 
 // ── Default stat shapes ────────────────────────────────────────────────────────
 const defDaily = () => ({ score:0, gamesPlayed:0, streak:0, history:[], lastPlayedDate:null, lastResult:null });
-const defUnlim = () => ({ currentStreak:0, bestStreak:0, streakHistory:[], totalGames:0, totalCorrect:0 });
+const defUnlim = () => ({ currentStreak:0, bestStreak:0, streakHistory:[], totalGames:0, totalCorrect:0, score:0 });
 
 // ── LocalStorage helpers ───────────────────────────────────────────────────────
 function loadDaily() { try { return Object.assign(defDaily(), JSON.parse(localStorage.getItem(SK_DAILY)||"{}")); } catch { return defDaily(); } }
@@ -385,7 +364,11 @@ function wikiURL(answer) {
 
 // ── Wager max logic ────────────────────────────────────────────────────────────
 function getWagerMax() {
-  if (mode === "unlimited") return 2000;
+  if (mode === "unlimited") {
+    const s = loadUnlim();
+    if (s.totalGames === 0 || s.score <= 0) return 2000;
+    return s.score > 2000 ? s.score : 2000;
+  }
   const s = loadDaily();
   if (s.gamesPlayed === 0 || s.score <= 0) return 2000;
   return s.score > 2000 ? s.score : 2000;
@@ -400,6 +383,7 @@ const fmtDate   = d => { if (!d) return ""; const [y,m,day] = d.split("-"); retu
 function renderStats() {
   const el = document.getElementById("stats-bar");
   if (mode === "daily") {
+    el.className = "stats";
     const s = loadDaily();
     el.innerHTML = `
       <div class="stat"><div class="stat-lbl">Score</div><div class="stat-val${s.score<0?" neg":""}">${s.score<0?"-":""}${fmtMoney(s.score)}</div></div>
@@ -407,7 +391,8 @@ function renderStats() {
       <div class="stat"><div class="stat-lbl">Streak</div><div class="stat-val">${s.streak}</div></div>
     `;
   } else {
-    const s   = loadUnlim();
+    el.className = "stats";
+    const s    = loadUnlim();
     const best = Math.max(s.bestStreak, s.currentStreak);
     const allS = [...(s.streakHistory || []), s.currentStreak].filter(x => x > 0);
     const avg  = allS.length ? (allS.reduce((a, b) => a + b, 0) / allS.length).toFixed(1) : "—";
@@ -415,6 +400,7 @@ function renderStats() {
       <div class="stat"><div class="stat-lbl">Current Streak</div><div class="stat-val">${s.currentStreak}</div></div>
       <div class="stat"><div class="stat-lbl">Best Streak</div><div class="stat-val">${best}</div></div>
       <div class="stat"><div class="stat-lbl">Avg Streak</div><div class="stat-val">${avg}</div></div>
+      <div class="stat stat-wide"><div class="stat-lbl">Lifetime Score</div><div class="stat-val${s.score<0?" neg":""}">${s.score<0?"-":""}${fmtMoney(s.score)}</div></div>
     `;
   }
 }
@@ -438,8 +424,6 @@ function renderWager(clue) {
     <div class="field-err" id="wager-err"></div>
     <button class="btn-primary" id="wager-btn">Place wager →</button>
   `;
-
-  document.getElementById("wager-inp").focus();
 
   const go = () => {
     const w = parseInt(document.getElementById("wager-inp").value, 10);
@@ -478,8 +462,6 @@ function renderClue(clue) {
     if (el) el.classList.remove("hidden");
   }, 60);
 
-  document.getElementById("resp-inp").focus();
-
   const submit = () => {
     const resp = (document.getElementById("resp-inp").value || "").trim();
     if (!resp) { document.getElementById("resp-err").textContent = "Please enter a response."; return; }
@@ -508,18 +490,21 @@ function renderClue(clue) {
       });
     } else {
       const s          = loadUnlim();
+      const newScore   = s.score + delta;
       const newStreak  = correct ? s.currentStreak + 1 : 0;
       // Save finished streak to history when a wrong answer ends it
       const newHistory = (!correct && s.currentStreak > 0)
         ? [...(s.streakHistory || []), s.currentStreak].slice(-100)
         : (s.streakHistory || []);
       const newBest    = Math.max(s.bestStreak, newStreak, correct ? 0 : s.currentStreak);
+      result.newScore  = newScore;
       saveUnlim({
         currentStreak: newStreak,
         bestStreak:    newBest,
         streakHistory: newHistory,
         totalGames:    s.totalGames + 1,
-        totalCorrect:  s.totalCorrect + (correct ? 1 : 0)
+        totalCorrect:  s.totalCorrect + (correct ? 1 : 0),
+        score:         newScore
       });
     }
 
@@ -542,9 +527,10 @@ function renderResult(result, alreadyPlayed) {
         <div class="stat"><div class="stat-lbl">${result.correct?"Won":"Lost"}</div><div class="stat-val" style="font-size:17px;color:${result.correct?"var(--t-ok)":"var(--t-err)"}">${signedAmt(result.delta)}</div></div>
         <div class="stat"><div class="stat-lbl">New Score</div><div class="stat-val" style="font-size:17px;color:${result.newScore<0?"var(--t-err)":"var(--tp)"}">${result.newScore<0?"-":""}${fmtMoney(result.newScore)}</div></div>
       </div>`
-    : `<div class="score-grid-2">
+    : `<div class="score-grid">
         <div class="stat"><div class="stat-lbl">Wager</div><div class="stat-val" style="font-size:17px">${fmtMoney(result.wager)}</div></div>
         <div class="stat"><div class="stat-lbl">${result.correct?"Won":"Lost"}</div><div class="stat-val" style="font-size:17px;color:${result.correct?"var(--t-ok)":"var(--t-err)"}">${signedAmt(result.delta)}</div></div>
+        <div class="stat"><div class="stat-lbl">Lifetime Score</div><div class="stat-val" style="font-size:17px;color:${result.newScore<0?"var(--t-err)":"var(--tp)"}">${result.newScore<0?"-":""}${fmtMoney(result.newScore)}</div></div>
       </div>`;
 
   // Bottom action: Next button (unlimited) or countdown (daily already-played)
